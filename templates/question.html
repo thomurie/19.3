@@ -1,0 +1,16 @@
+{% extends 'base.html' %}{% block content %} {% for msg in
+get_flashed_messages() %}
+<h2 style="color: red">{{msg}}</h2>
+{% endfor %}
+<h1>{{question.question}}</h1>
+<form action="/answer">
+  {% for c in question.choices %} {% endfor %}
+
+  <select name="select-choice" id="select-choice">
+    {% for c in question.choices %}
+    <option value="{{c}}">{{c}}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Next</button>
+</form>
+{% endblock %}
