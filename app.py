@@ -1,6 +1,8 @@
-from flask import Flask, request, render_template, flash, jsonify, redirect
+from flask import Flask, request, render_template, flash, redirect, session
 from flask_debugtoolbar import DebugToolbarExtension
 from surveys import satisfaction_survey 
+
+RESPONSES_1 = 'responses'
 
 app = Flask(__name__)
 
@@ -8,34 +10,45 @@ app.config["SECRET_KEY"] = "oh-so-secret"
 
 debug = DebugToolbarExtension(app)
 
-RESPONSES = []
-
 @app.route('/')
 def home():
-    RESPONSES.clear()
     return render_template('index.html', title = satisfaction_survey.title, instructions= satisfaction_survey.instructions)
 
-@app.route('/begin')
+@app.route("/begin", methods=["POST"])
 def begin():
-    return redirect(f"/questions/{len(RESPONSES)}")
+
+    session[RESPONSES_1] = []
+
+    return redirect("/questions/0")
 
 @app.route(f"/questions/<int:num>")
 def q(num):
-    if num != len(RESPONSES):
+    _responses = session.get(RESPONSES_1)
+
+    if num != len(_responses):
         flash('Invalid HTML')
-        return redirect(f"/questions/{len(RESPONSES)}")
-    if len(RESPONSES) != len(satisfaction_survey.questions):
-        return render_template('/question.html', question=satisfaction_survey.questions[len(RESPONSES)], num=num)
-    if len(RESPONSES) == len(satisfaction_survey.questions):
+        return redirect(f"/questions/{len(_responses)}")
+
+    if len(_responses) != len(satisfaction_survey.questions):
+        return render_template('/question.html', question=satisfaction_survey.questions[len(_responses)], num=num)
+
+    if len(_responses) == len(satisfaction_survey.questions):
         return redirect('/complete')
    
-@app.route('/answer')
+@app.route('/answer', methods=["POST"])
 def a():
-    RESPONSES.append(request.args["select-choice"])
-    print(RESPONSES)
+    user_input = request.form["select-choice"]
+    _responses = session[RESPONSES_1]
+    _responses.append(user_input)
+    session[RESPONSES_1] = _responses
 
-    return redirect(f"/questions/{len(RESPONSES)}")
+    if (len(_responses) == len(satisfaction_survey.questions)):
+        return redirect("/complete")
+    
+    else:
+        return redirect(f"/questions/{len(_responses)}")
 
 @app.route('/complete')
 def c():
+
     return render_template('complete.html')
